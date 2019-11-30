@@ -1,2 +1,1 @@
-# SimpleLiveStreaming
-Simple Live Streaming
+# Simple RTMP Server
