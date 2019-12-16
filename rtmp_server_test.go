@@ -1,10 +1,9 @@
-package rs
+package rtmp
 
 import (
 	"errors"
 	"fmt"
 	"net"
-	"os"
 	"testing"
 	"time"
 )
@@ -103,24 +102,4 @@ func Test_HandshakeC0(t *testing.T) {
 	if index != 1536+1 {
 		t.Fail()
 	}
-}
-
-func Test_Tmp(t *testing.T) {
-	s := newRtmpServer("0.0.0.0:1936")
-
-	f, err := os.Create("./tmp/test.flv")
-	if err != nil {
-		panic(err)
-	}
-
-	defer f.Close()
-	cb := func(stream *streamMeta, timestamp uint32, data []byte) error {
-		f.Write(data)
-		return nil
-	}
-	s.OnFlvHeader(cb)
-	s.OnFlvScriptData(cb)
-	s.OnFlvAudioData(cb)
-	s.OnFlvVideoData(cb)
-	s.run()
 }

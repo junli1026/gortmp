@@ -1,4 +1,4 @@
-package rs
+package rtmp
 
 import (
 	"net"
@@ -14,7 +14,19 @@ type rtmpServer struct {
 	flvAudioDataCb  FlvCallback
 }
 
-type FlvCallback func(meta *streamMeta, timestamp uint32, data []byte) error
+func NewServer(addr string) *rtmpServer {
+	return newRtmpServer(addr)
+}
+
+func (s *rtmpServer) Run() error {
+	return s.run()
+}
+
+func (s *rtmpServer) Stop() {
+	s.stop()
+}
+
+type FlvCallback func(meta *StreamMeta, timestamp uint32, data []byte) error
 
 func newRtmpServer(addr string) *rtmpServer {
 	s := &rtmpServer{}

@@ -1,4 +1,4 @@
-package rs
+package rtmp
 
 import (
 	"errors"

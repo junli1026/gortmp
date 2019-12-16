@@ -1,4 +1,4 @@
-package rs
+package rtmp
 
 import (
 	"encoding/binary"
@@ -10,27 +10,8 @@ import (
 	"github.com/junli1026/rtmp-server/message"
 )
 
-type streamMeta struct {
-	streamID        int
-	streamName      string
-	hasVideo        bool
-	hasAudio        bool
-	width           int
-	height          int
-	frameRate       int
-	videoCodec      string
-	videoDataRate   int
-	audioCodec      string
-	audioDataRate   int
-	audioChannels   int
-	audioSampleRate int
-	audioSampleSize int
-	stereo          bool
-	encoder         string
-}
-
 type rtmpContext struct {
-	streams           []*streamMeta
+	streams           []*StreamMeta
 	app               string
 	tcURL             string
 	swfURL            string
@@ -50,7 +31,7 @@ func newRtmpContext(s *rtmpServer) *rtmpContext {
 	ctx.hs = newHandshakeState()
 	ctx.windowSize = 2500000
 	ctx.chunkReader = newChunkReader()
-	ctx.streams = make([]*streamMeta, 0)
+	ctx.streams = make([]*StreamMeta, 0)
 	ctx.s = s
 	ctx.received = 0
 	return ctx
@@ -155,8 +136,8 @@ func (ctx *rtmpContext) onConnect(cmd *message.Amf0CommandMessage) ([]message.Me
 	return reply, nil
 }
 
-func (ctx *rtmpContext) findStream(streamID int) *streamMeta {
-	var stream *streamMeta = nil
+func (ctx *rtmpContext) findStream(streamID int) *StreamMeta {
+	var stream *StreamMeta = nil
 	for _, s := range ctx.streams {
 		if s.streamID == streamID {
 			stream = s
@@ -185,7 +166,7 @@ func (ctx *rtmpContext) onPublish(cmd *message.Amf0CommandMessage) ([]message.Me
 	/* set stream info */
 	stream := ctx.findStream(cmd.StreamID)
 	if stream == nil {
-		stream = &streamMeta{}
+		stream = &StreamMeta{}
 		stream.streamID = cmd.StreamID
 		ctx.streams = append(ctx.streams, stream)
 	}
@@ -270,7 +251,7 @@ func (ctx *rtmpContext) onMetaData(cmd *message.Amf0DataMessage) ([]message.Mess
 	return nil, nil
 }
 
-func setStreamMeta(stream *streamMeta, meta map[string]interface{}) {
+func setStreamMeta(stream *StreamMeta, meta map[string]interface{}) {
 	for key, value := range meta {
 		switch key {
 		case "width":
