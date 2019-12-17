@@ -2,6 +2,7 @@ package rtmp
 
 //StreamMeta describes stream metadata
 type StreamMeta struct {
+	url             string
 	streamID        int
 	streamName      string
 	hasVideo        bool
@@ -20,72 +21,77 @@ type StreamMeta struct {
 	encoder         string
 }
 
-//GetStreamID returns message stream id
-func (st *StreamMeta) GetStreamID() int {
+//URL returns stream url
+func (st *StreamMeta) URL() string {
+	return st.url
+}
+
+//StreamID returns stream id
+func (st *StreamMeta) StreamID() int {
 	return st.streamID
 }
 
-//GetStreamName returns stream name
-func (st *StreamMeta) GetStreamName() string {
+//StreamName returns stream name
+func (st *StreamMeta) StreamName() string {
 	return st.streamName
 }
 
-//GetWidth returns video width
-func (st *StreamMeta) GetWidth() int {
+//Width returns video width
+func (st *StreamMeta) Width() int {
 	return st.width
 }
 
-//GetHeight returns video Height
-func (st *StreamMeta) GetHeight() int {
+//Height returns video height
+func (st *StreamMeta) Height() int {
 	return st.height
 }
 
-//GetFrameRate returns video frame rate
-func (st *StreamMeta) GetFrameRate() int {
+//FrameRate returns video frame rate
+func (st *StreamMeta) FrameRate() int {
 	return st.frameRate
 }
 
-//GetVideoCodec returns video codec fourcc
-func (st *StreamMeta) GetVideoCodec() string {
+//VideoCodec returns video codec fourcc
+func (st *StreamMeta) VideoCodec() string {
 	return st.videoCodec
 }
 
-//GetVideoDataRate returns video data rate
-func (st *StreamMeta) GetVideoDataRate() int {
+//VideoDataRate returns video data rate
+func (st *StreamMeta) VideoDataRate() int {
 	return st.videoDataRate
 }
 
-//GetAudioCodec returns audio codec
-func (st *StreamMeta) GetAudioCodec() string {
+//AudioCodec returns audio codec
+func (st *StreamMeta) AudioCodec() string {
 	return st.audioCodec
 }
 
-//GetAudioDataRate return audio data rate
-func (st *StreamMeta) GetAudioDataRate() int {
+//AudioDataRate return audio data rate
+func (st *StreamMeta) AudioDataRate() int {
 	return st.audioDataRate
 }
 
-//GetAudioChannels returns number of audio channels
-func (st *StreamMeta) GetAudioChannels() int {
+//AudioChannels returns number of audio channels
+func (st *StreamMeta) AudioChannels() int {
 	return st.audioChannels
 }
 
-//GetAudioSampleRate returns audio sample rate
-func (st *StreamMeta) GetAudioSampleRate() int {
+//AudioSampleRate returns audio sample rate
+func (st *StreamMeta) AudioSampleRate() int {
 	return st.audioSampleRate
 }
 
-//GetAudioSampleSize returns audio sample size
-func (st *StreamMeta) GetAudioSampleSize() int {
+//AudioSampleSize returns audio sample size
+func (st *StreamMeta) AudioSampleSize() int {
 	return st.audioSampleSize
 }
 
-//IsStereo returns boolean indicating whether the audio is stereo
-func (st *StreamMeta) IsStereo() bool {
+//Stereo returns boolean indicating whether the audio is stereo
+func (st *StreamMeta) Stereo() bool {
 	return st.stereo
 }
 
-//GetEncoder returns encoder name
-func (st *StreamMeta) GetEncoder() string {
+//Encoder returns encoder name
+func (st *StreamMeta) Encoder() string {
 	return st.encoder
 }

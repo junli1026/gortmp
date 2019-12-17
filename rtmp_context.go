@@ -215,7 +215,7 @@ func (ctx *rtmpContext) onMetaData(cmd *message.Amf0DataMessage) ([]message.Mess
 		return nil, fmt.Errorf("failed to find stream with id %v", cmd.StreamID)
 	}
 
-	setStreamMeta(stream, cmd.Parameters)
+	ctx.setStreamMeta(stream, cmd.Parameters)
 
 	if !ctx.flvHeaderWritten && ctx.s.flvHeaderCb != nil {
 		err := ctx.s.flvHeaderCb(stream, 0, []byte{
@@ -251,7 +251,9 @@ func (ctx *rtmpContext) onMetaData(cmd *message.Amf0DataMessage) ([]message.Mess
 	return nil, nil
 }
 
-func setStreamMeta(stream *StreamMeta, meta map[string]interface{}) {
+func (ctx *rtmpContext) setStreamMeta(stream *StreamMeta, meta map[string]interface{}) {
+	logging.Logger.Info(meta)
+	stream.url = ctx.tcURL
 	for key, value := range meta {
 		switch key {
 		case "width":
@@ -275,7 +277,7 @@ func setStreamMeta(stream *StreamMeta, meta map[string]interface{}) {
 			if v, ok := value.(float64); ok {
 				stream.frameRate = int(v)
 			}
-		case "audiocodec":
+		case "audiocodecid":
 			if v, ok := value.(string); ok {
 				stream.audioCodec = v
 			}

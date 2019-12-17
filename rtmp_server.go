@@ -3,8 +3,41 @@ package rtmp
 import (
 	"net"
 
+	"github.com/junli1026/rtmp-server/logging"
 	"github.com/junli1026/rtmp-server/message"
+	"github.com/sirupsen/logrus"
 )
+
+type LogLevel int
+
+const (
+	PanicLevel LogLevel = iota
+	FatalLevel
+	ErrorLevel
+	WarnLevel
+	InfoLevel
+	DebugLevel
+	TraceLevel
+)
+
+var loglevelMap map[LogLevel]logrus.Level = map[LogLevel]logrus.Level{
+	PanicLevel: logrus.PanicLevel,
+	FatalLevel: logrus.FatalLevel,
+	ErrorLevel: logrus.ErrorLevel,
+	WarnLevel:  logrus.WarnLevel,
+	InfoLevel:  logrus.InfoLevel,
+	DebugLevel: logrus.DebugLevel,
+	TraceLevel: logrus.TraceLevel,
+}
+
+//LogSetting is the setting for logger
+type LogSetting struct {
+	LogLevel   LogLevel
+	Filename   string
+	MaxSize    int
+	MaxBackups int
+	MaxAge     int
+}
 
 type rtmpServer struct {
 	*baseServer
@@ -16,6 +49,17 @@ type rtmpServer struct {
 
 func NewServer(addr string) *rtmpServer {
 	return newRtmpServer(addr)
+}
+
+func (s *rtmpServer) ConfigLog(setting *LogSetting) {
+	config := &logging.LogConfig{
+		LogLevel:   loglevelMap[setting.LogLevel],
+		Filename:   setting.Filename,
+		MaxSize:    setting.MaxSize,
+		MaxBackups: setting.MaxBackups,
+		MaxAge:     setting.MaxAge,
+	}
+	logging.ConfigLogger(config)
 }
 
 func (s *rtmpServer) Run() error {
