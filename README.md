@@ -43,7 +43,7 @@ s.OnFlvScriptData(writeFile)
 s.OnFlvAudioData(writeFile)
 
 /* register callback when receiving video data */
-s.OnFlvVideoData(writeFile) //
+s.OnFlvVideoData(writeFile)
 
 go s.Run()
 
