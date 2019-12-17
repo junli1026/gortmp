@@ -1,15 +1,15 @@
 # Simple RTMP Server
 A lightweight rtmp/1.0 ingestion server implementation.
 
-#Compatibility
+## Compatibility
 Support OBS, Wirecast and FFmpeg ingestion.
 
-##Installation
+## Installation
 ```
 go get "github.com/junli1026/rtmp-server"
 ```
 
-##Example
+## Example
 The following example simply dump binary to flv file.
 ```
 s := rtmp.NewServer(":1936")
@@ -49,5 +49,5 @@ go s.Run()
 
 ```
 
-##License
+## License
 MIT

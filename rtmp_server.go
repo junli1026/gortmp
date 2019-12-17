@@ -78,20 +78,24 @@ func newRtmpServer(addr string) *rtmpServer {
 	return s
 }
 
-func (s *rtmpServer) OnFlvHeader(cb FlvCallback) {
+func (s *rtmpServer) OnFlvHeader(cb FlvCallback) *rtmpServer {
 	s.flvHeaderCb = cb
+	return s
 }
 
-func (s *rtmpServer) OnFlvScriptData(cb FlvCallback) {
+func (s *rtmpServer) OnFlvScriptData(cb FlvCallback) *rtmpServer {
 	s.flvScriptDataCb = cb
+	return s
 }
 
-func (s *rtmpServer) OnFlvVideoData(cb FlvCallback) {
+func (s *rtmpServer) OnFlvVideoData(cb FlvCallback) *rtmpServer {
 	s.flvVideoDataCb = cb
+	return s
 }
 
-func (s *rtmpServer) OnFlvAudioData(cb FlvCallback) {
+func (s *rtmpServer) OnFlvAudioData(cb FlvCallback) *rtmpServer {
 	s.flvAudioDataCb = cb
+	return s
 }
 
 func (s *rtmpServer) newContext(conn net.Conn) interface{} {

@@ -43,21 +43,13 @@ func main() {
 		return nil
 	})
 
-	writeFile := func(stream *rtmp.StreamMeta, timestamp uint32, data []byte) error {
+	cb := func(stream *rtmp.StreamMeta, timestamp uint32, data []byte) error {
 		f.Write(data)
 		return nil
 	}
 
-	/* register callback when receiving script data */
-	s.OnFlvScriptData(writeFile)
+	s.OnFlvScriptData(cb).OnFlvAudioData(cb).OnFlvVideoData(cb)
 
-	/* register callback when receiving audio data */
-	s.OnFlvAudioData(writeFile)
-
-	/* register callback when receiving video data */
-	s.OnFlvVideoData(writeFile)
-
-	/* create a goroutine to run server */
 	go func() {
 		if err := s.Run(); err != nil {
 			panic(err)
