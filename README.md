@@ -11,7 +11,7 @@ go get "github.com/junli1026/rtmp-server"
 
 ## Example
 The following example simply dump binary to flv file.
-```
+```go
 s := rtmp.NewServer(":1936")
 
 /* config log settings */
