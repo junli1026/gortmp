@@ -21,19 +21,40 @@ type chunkStream struct {
 }
 
 type chunkReader struct {
-	streams   map[int]*chunkStream
+	streams0  [64]*chunkStream
+	streams1  map[int]*chunkStream
 	chunkSize int
 }
 
 func newChunkReader() *chunkReader {
 	return &chunkReader{
-		streams:   make(map[int]*chunkStream),
+		streams1:  make(map[int]*chunkStream),
 		chunkSize: 128,
 	}
 }
 
 func (r *chunkReader) setChunkSize(chunkSize int) {
 	r.chunkSize = chunkSize
+}
+
+func (r *chunkReader) getStream(csid int) (st *chunkStream, ok bool) {
+	if csid < 64 {
+		st = r.streams0[csid]
+		if st != nil {
+			ok = true
+		}
+	} else {
+		st, ok = r.streams1[csid]
+	}
+	return
+}
+
+func (r *chunkReader) setStream(csid int, cs *chunkStream) {
+	if csid < 64 {
+		r.streams0[csid] = cs
+	} else {
+		r.streams1[csid] = cs
+	}
 }
 
 func (r *chunkReader) read(data []byte) (*message.RawMessage, int, error) {
@@ -43,7 +64,7 @@ func (r *chunkReader) read(data []byte) (*message.RawMessage, int, error) {
 	}
 
 	var cs *chunkStream = nil
-	if st, ok := r.streams[int(h.chunkStreamID)]; ok {
+	if st, ok := r.getStream(int(h.chunkStreamID)); ok {
 		cs = st
 		cs.curr = h
 	} else {
@@ -54,7 +75,7 @@ func (r *chunkReader) read(data []byte) (*message.RawMessage, int, error) {
 			payload:       make([]byte, 0),
 			remain:        0,
 		}
-		r.streams[int(h.chunkStreamID)] = cs
+		r.setStream(int(h.chunkStreamID), cs)
 	}
 	updateHeader(cs.curr, cs.prev)
 
