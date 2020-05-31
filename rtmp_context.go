@@ -23,10 +23,10 @@ type rtmpContext struct {
 	received          uint32
 
 	flvHeaderWritten bool
-	s                *rtmpServer
+	s                *RtmpServer
 }
 
-func newRtmpContext(s *rtmpServer) *rtmpContext {
+func newRtmpContext(s *RtmpServer) *rtmpContext {
 	ctx := &rtmpContext{}
 	ctx.hs = newHandshakeState()
 	ctx.windowSize = 2500000

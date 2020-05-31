@@ -39,7 +39,7 @@ type LogSetting struct {
 	MaxAge     int
 }
 
-type rtmpServer struct {
+type RtmpServer struct {
 	*baseServer
 	flvHeaderCb     FlvCallback
 	flvScriptDataCb FlvCallback
@@ -47,11 +47,11 @@ type rtmpServer struct {
 	flvAudioDataCb  FlvCallback
 }
 
-func NewServer(addr string) *rtmpServer {
+func NewServer(addr string) *RtmpServer {
 	return newRtmpServer(addr)
 }
 
-func (s *rtmpServer) ConfigLog(setting *LogSetting) {
+func (s *RtmpServer) ConfigLog(setting *LogSetting) {
 	config := &logging.LogConfig{
 		LogLevel:   loglevelMap[setting.LogLevel],
 		Filename:   setting.Filename,
@@ -62,47 +62,47 @@ func (s *rtmpServer) ConfigLog(setting *LogSetting) {
 	logging.ConfigLogger(config)
 }
 
-func (s *rtmpServer) Run() error {
+func (s *RtmpServer) Run() error {
 	return s.run()
 }
 
-func (s *rtmpServer) Stop() {
+func (s *RtmpServer) Stop() {
 	s.stop()
 }
 
 type FlvCallback func(meta *StreamMeta, timestamp uint32, data []byte) error
 
-func newRtmpServer(addr string) *rtmpServer {
-	s := &rtmpServer{}
+func newRtmpServer(addr string) *RtmpServer {
+	s := &RtmpServer{}
 	s.baseServer = newBaseServer(addr, s)
 	return s
 }
 
-func (s *rtmpServer) OnFlvHeader(cb FlvCallback) *rtmpServer {
+func (s *RtmpServer) OnFlvHeader(cb FlvCallback) *RtmpServer {
 	s.flvHeaderCb = cb
 	return s
 }
 
-func (s *rtmpServer) OnFlvScriptData(cb FlvCallback) *rtmpServer {
+func (s *RtmpServer) OnFlvScriptData(cb FlvCallback) *RtmpServer {
 	s.flvScriptDataCb = cb
 	return s
 }
 
-func (s *rtmpServer) OnFlvVideoData(cb FlvCallback) *rtmpServer {
+func (s *RtmpServer) OnFlvVideoData(cb FlvCallback) *RtmpServer {
 	s.flvVideoDataCb = cb
 	return s
 }
 
-func (s *rtmpServer) OnFlvAudioData(cb FlvCallback) *rtmpServer {
+func (s *RtmpServer) OnFlvAudioData(cb FlvCallback) *RtmpServer {
 	s.flvAudioDataCb = cb
 	return s
 }
 
-func (s *rtmpServer) newContext(conn net.Conn) interface{} {
+func (s *RtmpServer) newContext(conn net.Conn) interface{} {
 	return newRtmpContext(s)
 }
 
-func (*rtmpServer) read(data []byte, context interface{}) (consumed int, reply []byte, err error) {
+func (*RtmpServer) read(data []byte, context interface{}) (consumed int, reply []byte, err error) {
 	ctx := context.(*rtmpContext)
 	if !ctx.hs.done() {
 		return ctx.hs.handshake(data)
