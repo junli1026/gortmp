@@ -48,6 +48,3 @@ s.OnFlvVideoData(writeFile)
 go s.Run()
 
 ```
-
-## License
-MIT
