@@ -51,7 +51,7 @@ func Test_Echo(t *testing.T) {
 	go s.run()
 	time.Sleep(1 * time.Second)
 
-	num := 10000
+	num := 1000
 	conns := make([]net.Conn, num)
 	var wg sync.WaitGroup
 	for i := 0; i < num; i++ {

@@ -31,19 +31,26 @@ func newHandler(conn net.Conn, s *baseServer) *connHandler {
 	return handler
 }
 
-func (h *connHandler) read() error {
-	var buf = make([]byte, 1024*10)
-	l.Logger.Info("connection handler starts working\n")
-
-	// if not data for 60 seconds, we close conn with error timeout
-	if err := h.conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
-		l.Logger.Error(err)
+func (h *connHandler) logIOError(err error) error {
+	if h.s.serverState() == stopping { // server is in stopping state, supress the error log
+		l.Logger.Warn(err)
 		return err
 	}
+	l.Logger.Error(err)
+	return err
+}
+
+func (h *connHandler) read() error {
+	var buf = make([]byte, 1024*10)
+
+	// if no data for 60 seconds, we close conn with error timeout
+	if err := h.conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
+		return h.logIOError(err)
+	}
+
 	length, err := h.conn.Read(buf)
 	if err != nil {
-		l.Logger.Error(err)
-		return err
+		return h.logIOError(err)
 	}
 	h.readbuf = append(h.readbuf, buf[:length]...)
 	return nil
@@ -53,8 +60,7 @@ func (h *connHandler) writeAll(data []byte) error {
 	for data != nil && len(data) > 0 {
 		length, err := h.conn.Write(data)
 		if err != nil {
-			l.Logger.Error(err)
-			return err
+			return h.logIOError(err)
 		}
 		data = data[length:]
 	}
@@ -64,6 +70,7 @@ func (h *connHandler) writeAll(data []byte) error {
 func (h *connHandler) run() {
 	h.s.wg.Add(1)
 	defer h.s.wg.Done()
+	l.Logger.Info("connection handler starts working\n")
 	for {
 		if err := h.read(); err != nil {
 			return
@@ -102,7 +109,6 @@ type baseServer struct {
 	listener *net.TCPListener
 	mux      sync.Mutex
 	state    serverState
-	stopch   chan int
 	impl     serverImpl
 	wg       sync.WaitGroup
 }
@@ -150,11 +156,18 @@ func (s *baseServer) run() error {
 			continue
 		}
 		defer conn.Close()
+		l.Logger.Infof("new connection accepted from %v\n", conn.RemoteAddr().String())
 
 		h := newHandler(conn, s)
 		go h.run()
 	}
 	return nil
+}
+
+func (s *baseServer) serverState() serverState {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	return s.state
 }
 
 func (s *baseServer) stop() {
