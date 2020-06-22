@@ -239,9 +239,11 @@ func (s *baseServer) stop() {
 
 	s.listener.Close()
 
+	s.mux.Lock()
 	for _, handler := range s.handlers {
 		go handler.close()
 	}
+	s.mux.Unlock()
 
 	s.wg.Wait()
 	<-s.stopch
