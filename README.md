@@ -6,7 +6,7 @@ Support OBS, Wirecast and FFmpeg ingestion.
 
 ## Installation
 ```
-go get "github.com/junli1026/rtmp-server"
+go get "github.com/junli1026/gortmp"
 ```
 
 ## Example
