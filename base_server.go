@@ -169,8 +169,10 @@ func (s *baseServer) addHandler(conn net.Conn) *connHandler {
 	handler := newHandler(conn, s)
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	s.handlers[conn] = handler
-	s.wg.Add(1)
+	if _, ok := s.handlers[conn]; !ok {
+		s.handlers[conn] = handler
+		s.wg.Add(1)
+	}
 	l.Logger.Infof("%v active connections", len(s.handlers))
 	return handler
 }
@@ -178,8 +180,10 @@ func (s *baseServer) addHandler(conn net.Conn) *connHandler {
 func (s *baseServer) removeHandler(conn net.Conn) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
-	delete(s.handlers, conn)
-	s.wg.Done()
+	if _, ok := s.handlers[conn]; ok {
+		delete(s.handlers, conn)
+		s.wg.Done()
+	}
 }
 
 func (s *baseServer) run() error {
