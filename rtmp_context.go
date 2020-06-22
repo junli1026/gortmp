@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/junli1026/rtmp-server/logging"
-	"github.com/junli1026/rtmp-server/message"
+	"github.com/junli1026/gortmp/logging"
+	"github.com/junli1026/gortmp/message"
 )
 
 type rtmpContext struct {

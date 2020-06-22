@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/junli1026/rtmp-server/logging"
-	utils "github.com/junli1026/rtmp-server/utils"
+	"github.com/junli1026/gortmp/logging"
+	utils "github.com/junli1026/gortmp/utils"
 	"math"
 )
 

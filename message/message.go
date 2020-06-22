@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/junli1026/rtmp-server/logging"
+	"github.com/junli1026/gortmp/logging"
 )
 
 // RawMessage reprsents raw message

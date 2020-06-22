@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/junli1026/rtmp-server/logging"
-	"github.com/junli1026/rtmp-server/message"
-	utils "github.com/junli1026/rtmp-server/utils"
+	"github.com/junli1026/gortmp/logging"
+	"github.com/junli1026/gortmp/message"
+	utils "github.com/junli1026/gortmp/utils"
 )
 
 var chunkHeaderSize = [4]int{11, 7, 3}

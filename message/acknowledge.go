@@ -3,8 +3,8 @@ package message
 import (
 	"encoding/binary"
 
-	"github.com/junli1026/rtmp-server/logging"
-	utils "github.com/junli1026/rtmp-server/utils"
+	"github.com/junli1026/gortmp/logging"
+	utils "github.com/junli1026/gortmp/utils"
 )
 
 type AcknowledgementMessage struct {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/junli1026/rtmp-server"
+	rtmp "github.com/junli1026/gortmp"
 )
 
 func main() {

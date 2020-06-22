@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	l "github.com/junli1026/rtmp-server/logging"
+	l "github.com/junli1026/gortmp/logging"
 )
 
 type serverImpl interface {
