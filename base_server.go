@@ -2,10 +2,8 @@ package rtmp
 
 import (
 	"errors"
-	"io"
 	"net"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	l "github.com/junli1026/gortmp/logging"
@@ -17,77 +15,69 @@ type serverImpl interface {
 }
 
 type connHandler struct {
-	conn      net.Conn
-	readbuf   []byte
-	mux       *sync.Mutex
-	s         *baseServer
-	stopping  int32
-	readstop  chan int
-	writestop chan int
-	outch     chan []byte
-	context   interface{}
+	conn    net.Conn
+	readbuf []byte
+	s       *baseServer
+	context interface{}
 }
 
 func newHandler(conn net.Conn, s *baseServer) *connHandler {
 	handler := &connHandler{
-		conn:      conn,
-		readbuf:   make([]byte, 0),
-		mux:       &sync.Mutex{},
-		s:         s,
-		stopping:  0,
-		outch:     make(chan []byte, 16),
-		readstop:  make(chan int, 1),
-		writestop: make(chan int, 1),
-		context:   s.impl.newContext(conn),
+		conn:    conn,
+		readbuf: make([]byte, 0),
+		s:       s,
+		context: s.impl.newContext(conn),
 	}
 	return handler
 }
 
-func (h *connHandler) close() {
-	if !atomic.CompareAndSwapInt32(&h.stopping, 0, 1) {
-		return
-	}
-	h.conn.Close()
-	h.outch <- []byte{}
-	<-h.readstop
-	<-h.writestop
-	h.s.removeHandler(h.conn)
-}
-
-func (h *connHandler) readLoop() {
+func (h *connHandler) read() error {
 	var buf = make([]byte, 1024*10)
 	l.Logger.Info("connection handler starts working\n")
-Loop:
-	for {
-		// if not data for 60 seconds, we close conn with error timeout
-		if err := h.conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
-			l.Logger.Error(err)
-			break
-		}
-		length, err := h.conn.Read(buf)
-		if err != nil {
-			if atomic.LoadInt32(&h.stopping) != 0 {
-				l.Logger.Info("trying to stop read loop")
-			} else if err == io.EOF {
-				go h.close()
-			} else {
-				l.Logger.Error("read conn failed ", err)
-				go h.close()
-			}
-			break
-		}
 
-		h.readbuf = append(h.readbuf, buf[:length]...)
+	// if not data for 60 seconds, we close conn with error timeout
+	if err := h.conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
+		l.Logger.Error(err)
+		return err
+	}
+	length, err := h.conn.Read(buf)
+	if err != nil {
+		l.Logger.Error(err)
+		return err
+	}
+	h.readbuf = append(h.readbuf, buf[:length]...)
+	return nil
+}
+
+func (h *connHandler) writeAll(data []byte) error {
+	for data != nil && len(data) > 0 {
+		length, err := h.conn.Write(data)
+		if err != nil {
+			l.Logger.Error(err)
+			return err
+		}
+		data = data[length:]
+	}
+	return nil
+}
+
+func (h *connHandler) run() {
+	h.s.wg.Add(1)
+	defer h.s.wg.Done()
+	for {
+		if err := h.read(); err != nil {
+			return
+		}
 
 		for {
 			length, reply, err := h.s.impl.read(h.readbuf, h.context)
 			if err != nil {
 				l.Logger.Error(err)
-				break Loop
+				return
 			}
 
-			if reply != nil && len(reply) > 0 {
-				h.outch <- reply
+			if err = h.writeAll(reply); err != nil {
+				return
 			}
 
 			if length != 0 {
@@ -97,36 +87,6 @@ Loop:
 			}
 		}
 	}
-	h.readstop <- 1
-}
-
-func (h *connHandler) writeLoop() {
-	for {
-		reply := <-h.outch
-		if reply == nil || len(reply) == 0 {
-			break
-		}
-
-		for {
-			length, err := h.conn.Write(reply)
-			if err != nil {
-				if atomic.LoadInt32(&h.stopping) != 0 {
-					l.Logger.Info("trying to stop write loop")
-				} else if err == io.EOF {
-					l.Logger.Info("eof")
-				} else {
-					l.Logger.Error("write conn failed ", err)
-				}
-				break
-			}
-
-			reply = reply[length:]
-			if len(reply) == 0 {
-				break
-			}
-		}
-	}
-	h.writestop <- 1
 }
 
 type serverState int
@@ -140,12 +100,11 @@ const (
 type baseServer struct {
 	addr     string
 	listener *net.TCPListener
-	wg       sync.WaitGroup
 	mux      sync.Mutex
 	state    serverState
-	handlers map[net.Conn]*connHandler
 	stopch   chan int
 	impl     serverImpl
+	wg       sync.WaitGroup
 }
 
 func newBaseServer(addr string, impl serverImpl) *baseServer {
@@ -153,36 +112,8 @@ func newBaseServer(addr string, impl serverImpl) *baseServer {
 		addr:     addr,
 		listener: nil,
 		state:    stopped,
-		handlers: make(map[net.Conn]*connHandler),
-		stopch:   make(chan int, 1),
+		wg:       sync.WaitGroup{},
 		impl:     impl,
-	}
-}
-
-func (s *baseServer) numConnections() int {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-	return len(s.handlers)
-}
-
-func (s *baseServer) addHandler(conn net.Conn) *connHandler {
-	handler := newHandler(conn, s)
-	s.mux.Lock()
-	defer s.mux.Unlock()
-	if _, ok := s.handlers[conn]; !ok {
-		s.handlers[conn] = handler
-		s.wg.Add(1)
-	}
-	l.Logger.Infof("%v active connections", len(s.handlers))
-	return handler
-}
-
-func (s *baseServer) removeHandler(conn net.Conn) {
-	s.mux.Lock()
-	defer s.mux.Unlock()
-	if _, ok := s.handlers[conn]; ok {
-		delete(s.handlers, conn)
-		s.wg.Done()
 	}
 }
 
@@ -218,12 +149,11 @@ func (s *baseServer) run() error {
 			l.Logger.Warning(err)
 			continue
 		}
+		defer conn.Close()
 
-		handler := s.addHandler(conn)
-		go handler.readLoop()
-		go handler.writeLoop()
+		h := newHandler(conn, s)
+		go h.run()
 	}
-	s.stopch <- 1
 	return nil
 }
 
@@ -237,13 +167,8 @@ func (s *baseServer) stop() {
 	s.state = stopping
 	s.mux.Unlock()
 
-	// stop the listener, then stop all active connections
 	s.listener.Close()
-	for _, handler := range s.handlers {
-		go handler.close()
-	}
-	s.wg.Wait()
-	<-s.stopch
+	s.wg.Wait() // wait for all active connection to close
 
 	s.mux.Lock()
 	s.state = stopped
