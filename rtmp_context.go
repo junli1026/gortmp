@@ -217,18 +217,23 @@ func (ctx *rtmpContext) onMetaData(cmd *message.Amf0DataMessage) ([]message.Mess
 
 	ctx.setStreamMeta(stream, cmd.Parameters)
 
-	if !ctx.flvHeaderWritten && ctx.s.flvHeaderCb != nil {
-		err := ctx.s.flvHeaderCb(stream, 0, []byte{
-			'F', 'L', 'V', 0x01, 0x05, 0x00, 0x00, 0x00, 0x09,
-			0x00, 0x00, 0x00, 0x00, // previous tag size
-		})
-		if err != nil {
+	if !ctx.flvHeaderWritten && ctx.s.streamDataHandler != nil {
+		flvHeader := StreamData{
+			Type:      FlvHeader,
+			Timestamp: 0,
+			Data: []byte{
+				'F', 'L', 'V', 0x01, 0x05, 0x00, 0x00, 0x00, 0x09,
+				0x00, 0x00, 0x00, 0x00, // previous tag size
+			},
+		}
+
+		if err := ctx.s.streamDataHandler(stream, &flvHeader); err != nil {
 			return nil, err
 		}
 		ctx.flvHeaderWritten = true
 	}
 
-	if ctx.s.flvScriptDataCb != nil {
+	if ctx.s.streamDataHandler != nil {
 		metaData := cmd.Raw[16:] // skip @setDataFrame
 		scriptData := make([]byte, 0)
 		l := make([]byte, 4)
@@ -243,8 +248,12 @@ func (ctx *rtmpContext) onMetaData(cmd *message.Amf0DataMessage) ([]message.Mess
 		binary.BigEndian.PutUint32(l, uint32(len(scriptData)))
 		scriptData = append(scriptData, l[:]...)
 
-		err := ctx.s.flvScriptDataCb(stream, 0, scriptData)
-		if err != nil {
+		flvScript := StreamData{
+			Type:      FlvScript,
+			Timestamp: 0,
+			Data:      scriptData,
+		}
+		if err := ctx.s.streamDataHandler(stream, &flvScript); err != nil {
 			return nil, err
 		}
 	}
@@ -311,7 +320,7 @@ func (ctx *rtmpContext) setStreamMeta(stream *StreamMeta, meta map[string]interf
 }
 
 func (ctx *rtmpContext) onVideoData(msg *message.VideoMessage) ([]message.Message, error) {
-	if ctx.s.flvVideoDataCb != nil {
+	if ctx.s.streamDataHandler != nil {
 		if err := ctx.onMediaData(msg.RawMessage, 0x09); err != nil {
 			return nil, err
 		}
@@ -320,7 +329,7 @@ func (ctx *rtmpContext) onVideoData(msg *message.VideoMessage) ([]message.Messag
 }
 
 func (ctx *rtmpContext) onAudioData(msg *message.AudioMessage) ([]message.Message, error) {
-	if ctx.s.flvAudioDataCb != nil {
+	if ctx.s.streamDataHandler != nil {
 		if err := ctx.onMediaData(msg.RawMessage, 0x08); err != nil {
 			return nil, err
 		}
@@ -353,12 +362,15 @@ func (ctx *rtmpContext) onMediaData(msg message.RawMessage, tagTye byte) error {
 	mediaData = append(mediaData, l[:]...) //previous tag size
 
 	var err error
+	var streamData StreamData
 	if tagTye == 0x09 {
-		err = ctx.s.flvVideoDataCb(stream, msg.Timestamp, mediaData)
+		streamData.Type = FlvVideo
 	} else {
-		err = ctx.s.flvAudioDataCb(stream, msg.Timestamp, mediaData)
+		streamData.Type = FlvAudio
 	}
-	if err != nil {
+	streamData.Timestamp = msg.Timestamp
+	streamData.Data = mediaData
+	if err = ctx.s.streamDataHandler(stream, &streamData); err != nil {
 		return err
 	}
 	return nil

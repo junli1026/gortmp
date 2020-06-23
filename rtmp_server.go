@@ -39,16 +39,34 @@ type LogSetting struct {
 	MaxAge     int
 }
 
+type StreamDataHandler func(meta *StreamMeta, data *StreamData) error
+
+type StreamCloseHandler func(meta *StreamMeta, err error)
+
+type StreamDataType int
+
+const (
+	FlvHeader StreamDataType = iota
+	FlvScript
+	FlvVideo
+	FlvAudio
+)
+
+type StreamData struct {
+	Type      StreamDataType
+	Timestamp uint32
+	Data      []byte
+}
+
 type RtmpServer struct {
 	*baseServer
-	flvHeaderCb     FlvCallback
-	flvScriptDataCb FlvCallback
-	flvVideoDataCb  FlvCallback
-	flvAudioDataCb  FlvCallback
+	streamDataHandler  StreamDataHandler
+	streamCloseHandler StreamCloseHandler
 }
 
 func NewServer(addr string) *RtmpServer {
-	return newRtmpServer(addr)
+	s := newRtmpServer(addr)
+	return s
 }
 
 func (s *RtmpServer) ConfigLog(setting *LogSetting) {
@@ -70,32 +88,18 @@ func (s *RtmpServer) Stop() {
 	s.stop()
 }
 
-type FlvCallback func(meta *StreamMeta, timestamp uint32, data []byte) error
-
 func newRtmpServer(addr string) *RtmpServer {
 	s := &RtmpServer{}
 	s.baseServer = newBaseServer(addr, s)
 	return s
 }
 
-func (s *RtmpServer) OnFlvHeader(cb FlvCallback) *RtmpServer {
-	s.flvHeaderCb = cb
-	return s
+func (s *RtmpServer) OnStreamData(handler StreamDataHandler) {
+	s.streamDataHandler = handler
 }
 
-func (s *RtmpServer) OnFlvScriptData(cb FlvCallback) *RtmpServer {
-	s.flvScriptDataCb = cb
-	return s
-}
-
-func (s *RtmpServer) OnFlvVideoData(cb FlvCallback) *RtmpServer {
-	s.flvVideoDataCb = cb
-	return s
-}
-
-func (s *RtmpServer) OnFlvAudioData(cb FlvCallback) *RtmpServer {
-	s.flvAudioDataCb = cb
-	return s
+func (s *RtmpServer) OnStreamClose(handler StreamCloseHandler) {
+	s.streamCloseHandler = handler
 }
 
 func (s *RtmpServer) newContext(conn net.Conn) interface{} {
@@ -137,4 +141,11 @@ func (*RtmpServer) read(data []byte, context interface{}) (consumed int, reply [
 	}
 
 	return consumed, reply, nil
+}
+
+func (s *RtmpServer) close(err error, context interface{}) {
+	ctx := context.(*rtmpContext)
+	for _, stream := range ctx.streams {
+		s.streamCloseHandler(stream, err)
+	}
 }

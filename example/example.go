@@ -25,30 +25,31 @@ func main() {
 	f, _ := os.Create("./test.flv")
 	defer f.Close()
 
-	/* register callback when receiving flv header */
-	s.OnFlvHeader(func(stream *rtmp.StreamMeta, timestamp uint32, data []byte) error {
-		fmt.Printf("    encoder: %v\n", stream.Encoder())
-		fmt.Printf(" stream url: %v\n", stream.URL())
-		fmt.Printf("stream name: %v\n", stream.StreamName())
-		fmt.Printf("video codec: %v\n", stream.VideoCodec())
-		fmt.Printf(" frame rate: %v\n", stream.FrameRate())
-		fmt.Printf("      width: %v\n", stream.Width())
-		fmt.Printf("     height: %v\n", stream.Height())
-		fmt.Printf("audio codec: %v\n", stream.AudioCodec())
-		fmt.Printf("   channels: %v\n", stream.AudioChannels())
-		fmt.Printf(" samplerate: %v\n", stream.AudioSampleRate())
-		fmt.Printf(" samplesize: %v\n", stream.AudioSampleSize())
-		fmt.Printf("     stereo: %v\n", stream.Stereo())
-		f.Write(data)
+	/* register handler for stream data */
+	s.OnStreamData(func(meta *rtmp.StreamMeta, streamData *rtmp.StreamData) error {
+		if streamData.Type == rtmp.FlvHeader { //header data only shows once, at the beginning of stream data
+			fmt.Printf("    encoder: %v\n", meta.Encoder())
+			fmt.Printf(" stream url: %v\n", meta.URL())
+			fmt.Printf("stream name: %v\n", meta.StreamName())
+			fmt.Printf("video codec: %v\n", meta.VideoCodec())
+			fmt.Printf(" frame rate: %v\n", meta.FrameRate())
+			fmt.Printf("      width: %v\n", meta.Width())
+			fmt.Printf("     height: %v\n", meta.Height())
+			fmt.Printf("audio codec: %v\n", meta.AudioCodec())
+			fmt.Printf("   channels: %v\n", meta.AudioChannels())
+			fmt.Printf(" samplerate: %v\n", meta.AudioSampleRate())
+			fmt.Printf(" samplesize: %v\n", meta.AudioSampleSize())
+			fmt.Printf("     stereo: %v\n", meta.Stereo())
+		}
+
+		// simply write binary to file
+		f.Write(streamData.Data)
 		return nil
 	})
 
-	cb := func(stream *rtmp.StreamMeta, timestamp uint32, data []byte) error {
-		f.Write(data)
-		return nil
-	}
-
-	s.OnFlvScriptData(cb).OnFlvAudioData(cb).OnFlvVideoData(cb)
+	s.OnStreamClose(func(meta *rtmp.StreamMeta, err error) {
+		fmt.Printf("stream-'%v' name-'%v' closed for reason: %v\n", meta.URL(), meta.StreamName(), err)
+	})
 
 	go func() {
 		if err := s.Run(); err != nil {

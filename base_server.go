@@ -12,6 +12,7 @@ import (
 type serverImpl interface {
 	newContext(conn net.Conn) interface{}
 	read(data []byte, context interface{}) (int, []byte, error)
+	close(err error, context interface{})
 }
 
 type connHandler struct {
@@ -73,6 +74,7 @@ func (h *connHandler) run() {
 	l.Logger.Info("connection handler starts working\n")
 	for {
 		if err := h.read(); err != nil {
+			h.s.impl.close(err, h.context)
 			return
 		}
 
@@ -84,6 +86,7 @@ func (h *connHandler) run() {
 			}
 
 			if err = h.writeAll(reply); err != nil {
+				h.s.impl.close(err, h.context)
 				return
 			}
 
