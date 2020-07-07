@@ -34,8 +34,8 @@ func sendc1(conn net.Conn) error {
 }
 
 func Test_HandshakeC0C1(t *testing.T) {
-	s := newRtmpServer("127.0.0.1:1234")
-	go s.run()
+	s := newRtmpServer()
+	go s.listenAndServe(":1234")
 	time.Sleep(1 * time.Second)
 
 	conn, err := net.Dial("tcp", "127.0.0.1:1234")
@@ -71,8 +71,8 @@ func Test_HandshakeC0C1(t *testing.T) {
 }
 
 func Test_HandshakeC0(t *testing.T) {
-	s := newRtmpServer("127.0.0.1:1234")
-	go s.run()
+	s := newRtmpServer()
+	go s.listenAndServe(":1234")
 	time.Sleep(1 * time.Second)
 
 	conn, err := net.Dial("tcp", "127.0.0.1:1234")

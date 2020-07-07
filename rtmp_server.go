@@ -64,8 +64,8 @@ type RtmpServer struct {
 	streamCloseHandler StreamCloseHandler
 }
 
-func NewServer(addr string) *RtmpServer {
-	s := newRtmpServer(addr)
+func NewServer() *RtmpServer {
+	s := newRtmpServer()
 	return s
 }
 
@@ -80,17 +80,17 @@ func (s *RtmpServer) ConfigLog(setting *LogSetting) {
 	logging.ConfigLogger(config)
 }
 
-func (s *RtmpServer) Run() error {
-	return s.run()
+func (s *RtmpServer) Run(addr string) error {
+	return s.baseServer.listenAndServe(addr)
 }
 
 func (s *RtmpServer) Stop() {
 	s.stop()
 }
 
-func newRtmpServer(addr string) *RtmpServer {
+func newRtmpServer() *RtmpServer {
 	s := &RtmpServer{}
-	s.baseServer = newBaseServer(addr, s)
+	s.baseServer = newBaseServer(s)
 	return s
 }
 

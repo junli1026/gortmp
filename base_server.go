@@ -2,6 +2,7 @@ package rtmp
 
 import (
 	"errors"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -34,10 +35,12 @@ func newHandler(conn net.Conn, s *baseServer) *connHandler {
 
 func (h *connHandler) logIOError(err error) error {
 	if h.s.serverState() == stopping { // server is in stopping state, supress the error log
-		l.Logger.Warn(err)
+		l.Logger.Warnf("server is in STOPPING state, %v", err)
 		return err
 	}
-	l.Logger.Error(err)
+	if err != io.EOF {
+		l.Logger.Error(err)
+	}
 	return err
 }
 
@@ -71,7 +74,6 @@ func (h *connHandler) writeAll(data []byte) error {
 func (h *connHandler) run() {
 	h.s.wg.Add(1)
 	defer h.s.wg.Done()
-	l.Logger.Info("connection handler starts working\n")
 	for {
 		if err := h.read(); err != nil {
 			h.s.impl.close(err, h.context)
@@ -81,7 +83,7 @@ func (h *connHandler) run() {
 		for {
 			length, reply, err := h.s.impl.read(h.readbuf, h.context)
 			if err != nil {
-				l.Logger.Error(err)
+				l.Logger.Errorf("application 'read' returns error: %v", err)
 				return
 			}
 
@@ -108,7 +110,7 @@ const (
 )
 
 type baseServer struct {
-	addr     string
+	addr     *net.TCPAddr
 	listener *net.TCPListener
 	mux      sync.Mutex
 	state    serverState
@@ -116,9 +118,8 @@ type baseServer struct {
 	wg       sync.WaitGroup
 }
 
-func newBaseServer(addr string, impl serverImpl) *baseServer {
+func newBaseServer(impl serverImpl) *baseServer {
 	return &baseServer{
-		addr:     addr,
 		listener: nil,
 		state:    stopped,
 		wg:       sync.WaitGroup{},
@@ -126,21 +127,22 @@ func newBaseServer(addr string, impl serverImpl) *baseServer {
 	}
 }
 
-func (s *baseServer) run() error {
+func (s *baseServer) listenAndServe(addr string) error {
 	s.mux.Lock()
 	if s.state != stopped {
 		defer s.mux.Unlock()
-		return errors.New("server is not in 'stopped' state")
+		return errors.New("server is not in STOPPED state")
 	}
 	s.state = running
 	s.mux.Unlock()
 
-	address, err := net.ResolveTCPAddr("tcp", s.addr)
+	var err error
+	s.addr, err = net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		l.Logger.Fatal(err)
 	}
 
-	s.listener, err = net.ListenTCP("tcp", address)
+	s.listener, err = net.ListenTCP("tcp", s.addr)
 	if err != nil {
 		l.Logger.Fatal(err)
 	}
@@ -155,7 +157,9 @@ func (s *baseServer) run() error {
 				break
 			}
 			s.mux.Unlock()
-			l.Logger.Warning(err)
+			if err != io.EOF {
+				l.Logger.Warning(err)
+			}
 			continue
 		}
 		defer conn.Close()
@@ -175,8 +179,9 @@ func (s *baseServer) serverState() serverState {
 
 func (s *baseServer) stop() {
 	s.mux.Lock()
+	l.Logger.Info("trying to stop the server...")
 	if s.state != running {
-		l.Logger.Warning("server state is not 'running'")
+		l.Logger.Warning("server state is not in RUNNING state")
 		defer s.mux.Unlock()
 		return
 	}
@@ -188,5 +193,6 @@ func (s *baseServer) stop() {
 
 	s.mux.Lock()
 	s.state = stopped
+	l.Logger.Info("server stopped")
 	s.mux.Unlock()
 }

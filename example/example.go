@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	s := rtmp.NewServer(":1936")
+	s := rtmp.NewServer()
 
 	/* config log settings */
 	s.ConfigLog(&rtmp.LogSetting{
@@ -52,7 +52,7 @@ func main() {
 	})
 
 	go func() {
-		if err := s.Run(); err != nil {
+		if err := s.Run(":1936"); err != nil {
 			panic(err)
 		}
 	}()

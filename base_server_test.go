@@ -27,9 +27,9 @@ type echoServer struct {
 	*baseServer
 }
 
-func newEchoServer(addr string) *echoServer {
+func newEchoServer() *echoServer {
 	s := &echoServer{}
-	s.baseServer = newBaseServer(addr, s)
+	s.baseServer = newBaseServer(s)
 	return s
 }
 
@@ -46,9 +46,13 @@ func (*echoServer) read(arr []byte, opaque interface{}) (int, []byte, error) {
 	return 0, nil, nil
 }
 
+func (*echoServer) close(err error, context interface{}) {
+	return
+}
+
 func Test_Echo(t *testing.T) {
-	s := newEchoServer("127.0.0.1:1234")
-	go s.run()
+	s := newEchoServer()
+	go s.listenAndServe(":1234")
 	time.Sleep(1 * time.Second)
 
 	num := 1000

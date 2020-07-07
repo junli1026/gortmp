@@ -2,6 +2,7 @@ package rtmp
 
 import (
 	"errors"
+
 	l "github.com/junli1026/gortmp/logging"
 )
 
@@ -61,8 +62,6 @@ func (hs *handshakeState) done() bool {
 func (hs *handshakeState) handshake(data []byte) (int, []byte, error) {
 	if !hs.c0 {
 		hs.c0 = true
-		version := int(data[0])
-		l.Logger.Infof("version %v", version)
 		if len(data) >= 1536+1 {
 			hs.c1 = true
 			reply := hs.generateS0S1S2(data[1 : 1+1536])
