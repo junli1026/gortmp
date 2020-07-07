@@ -41,7 +41,8 @@ func main() {
 
 	/* register handler for stream data */
 	s.OnStreamData(func(meta *rtmp.StreamMeta, streamData *rtmp.StreamData) error {
-		if streamData.Type == rtmp.FlvHeader { //header data only shows once, at the beginning of stream data
+		//header data only shows once, at the beginning of stream data
+		if streamData.Type == rtmp.FlvHeader {
 			fmt.Printf("    encoder: %v\n", meta.Encoder())
 			fmt.Printf(" stream url: %v\n", meta.URL())
 			fmt.Printf("stream name: %v\n", meta.StreamName())
@@ -62,7 +63,8 @@ func main() {
 	})
 
 	s.OnStreamClose(func(meta *rtmp.StreamMeta, err error) {
-		fmt.Printf("stream-'%v' name-'%v' closed for reason: %v\n", meta.URL(), meta.StreamName(), err)
+		fmt.Printf("stream-'%v' name-'%v' closed for reason: %v\n",
+			meta.URL(), meta.StreamName(), err)
 	})
 
 	go func() {
